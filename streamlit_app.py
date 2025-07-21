@@ -54,7 +54,7 @@ with tab2:
         st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
 # --- Special Rate Calculator ---
-with tab2:
+with tab3:
     st.header("Special Rate Calculator")
 
     nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, step=1.0)
