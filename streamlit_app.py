@@ -57,8 +57,9 @@ with tab2:
 with tab3:
     st.header("Special Rate Calculator")
 
-    nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, step=1.0)
-    nights = st.number_input("Number of Nights", min_value=1, value=1)
+    nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
+    nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
+
     discount_percent = st.slider("Discount (%)", 0, 100, 0)
 
     st.markdown("#### Tax Exemptions (optional)")
