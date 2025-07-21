@@ -19,9 +19,9 @@ with st.sidebar:
         lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
     else:
         # Default values if advanced is off
-        state_tax = 4.5
+        state_tax = 6.875
         city_tax = 3.0
-        lodging_tax = 5.0
+        lodging_tax = 2.7564
 
     active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.2f}%**")
