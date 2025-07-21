@@ -14,17 +14,16 @@ with st.sidebar:
     show_advanced = st.checkbox("Manually Adjust Tax Components")
 
     if show_advanced:
-        use_state = st.checkbox("Include State Tax", value=True)
-        use_city = st.checkbox("Include City Tax", value=True)
-        use_lodging = st.checkbox("Include Lodging Tax", value=True)
+        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
+        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=3.0, step=0.1)
+        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
     else:
-        use_state = use_city = use_lodging = True
+        # Default values if advanced is off
+        state_tax = 4.5
+        city_tax = 3.0
+        lodging_tax = 5.0
 
-    active_tax = (
-            (STATE_TAX if use_state else 0.0) +
-            (CITY_TAX if use_city else 0.0) +
-            (LODGING_TAX if use_lodging else 0.0)
-    )
+    active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.2f}%**")
 
 # --- Tabs ---
