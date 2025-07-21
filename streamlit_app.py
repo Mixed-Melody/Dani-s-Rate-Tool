@@ -1,71 +1,88 @@
 import streamlit as st
 
-st.set_page_config(page_title="Rate Calculator", layout="wide")
+st.set_page_config(page_title="Rate Calculator", layout="centered")
+st.title("🏨 Hotel Rate Calculator")
 
-st.title("Hotel Rate Calculator")
+# --- Tax Rates ---
+STATE_TAX = 4.5
+CITY_TAX = 3.0
+LODGING_TAX = 5.0
 
-st.markdown("Use this tool to calculate rates or reverse-engineer totals based on taxes and nights.")
+# --- Tax Component Toggle ---
+with st.sidebar:
+    st.markdown("### ⚙️ Advanced Tax Settings")
+    show_advanced = st.checkbox("Manually Adjust Tax Components")
 
-# Default tax values
-default_state_tax = 6.875
-default_city_tax = 0.5
-default_lodging_tax = 5.125
+    if show_advanced:
+        use_state = st.checkbox("Include State Tax", value=True)
+        use_city = st.checkbox("Include City Tax", value=True)
+        use_lodging = st.checkbox("Include Lodging Tax", value=True)
+    else:
+        use_state = use_city = use_lodging = True
 
-st.sidebar.header("Advanced Tax Settings")
-state_tax = st.sidebar.number_input("State Tax %", value=default_state_tax, step=0.001)
-city_tax = st.sidebar.number_input("City Tax %", value=default_city_tax, step=0.001)
-lodging_tax = st.sidebar.number_input("Lodging Tax %", value=default_lodging_tax, step=0.001)
+    active_tax = (
+            (STATE_TAX if use_state else 0.0) +
+            (CITY_TAX if use_city else 0.0) +
+            (LODGING_TAX if use_lodging else 0.0)
+    )
+    st.caption(f"Current Tax Rate: **{active_tax:.2f}%**")
 
-total_tax_percent = state_tax + city_tax + lodging_tax
-tax_multiplier = 1 + (total_tax_percent / 100)
+# --- Tabs ---
+tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total", "Special Rate"])
 
-# ---- Reverse Rate Section ----
-st.header("Reverse Rate Calculator")
-st.markdown("Enter a total amount and number of nights to calculate the base rate before tax.")
+# --- Reverse Calculator ---
+with tab1:
+    st.subheader("Reverse Calculator – Total to Rate")
+    total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f")
+    nights = st.number_input("Number of Nights", min_value=1, value=1)
 
-with st.form("reverse_form"):
-    total_input = st.number_input("Total Charge (with tax)", min_value=0.0, step=0.01)
-    nights_reverse = st.number_input("Number of Nights", min_value=1, step=1)
-    submitted_reverse = st.form_submit_button("Calculate Base Rate")
+    if st.button("Calculate Rate", key="reverse"):
+        base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
+        result = f"{base_rate:.2f}"
+        st.success(f"Base Nightly Rate: ${result}")
+        st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
-    if submitted_reverse:
-        base_rate = total_input / tax_multiplier / nights_reverse
-        st.success(f"Base Rate per Night: ${base_rate:.2f}")
+# --- Forward Calculator ---
+with tab2:
+    st.subheader("Forward Calculator – Rate to Total")
+    base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, format="%.2f")
+    nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights")
 
-# ---- Special Rate Section ----
-st.header("Special Rate Quote")
-st.markdown("Calculate a custom total based on optional discount and tax exclusions.")
+    if st.button("Calculate Total", key="forward"):
+        total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
+        result = f"{total:.2f}"
+        st.success(f"Total Cost with Tax: ${result}")
+        st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
-with st.form("special_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        rate = st.number_input("Base Rate", min_value=0.0, step=0.01)
-        nights = st.number_input("Number of Nights", min_value=1, step=1)
-        discount_toggle = st.checkbox("Apply Discount")
-        discount_percent = st.number_input("Discount %", min_value=0.0, max_value=100.0, step=0.1) if discount_toggle else 0.0
+# --- Special Rate Calculator ---
+with tab3:
+    st.subheader("Special Rate Calculator – Quote Builder")
 
-    with col2:
-        tax_exclusion_toggle = st.checkbox("Exclude Specific Taxes")
-        exclude_state = st.checkbox("Exclude State Tax") if tax_exclusion_toggle else False
-        exclude_city = st.checkbox("Exclude City Tax") if tax_exclusion_toggle else False
-        exclude_lodging = st.checkbox("Exclude Lodging Tax") if tax_exclusion_toggle else False
+    base_rate_special = st.number_input("Base Rate ($)", min_value=0.0, format="%.2f", key="special_rate")
+    nights_special = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
 
-    submitted_special = st.form_submit_button("Calculate Total")
+    mode = st.radio("Adjust Rate By:", ["Discount (%)", "Exclude Tax Type"])
 
-    if submitted_special:
-        effective_rate = rate * (1 - discount_percent / 100)
+    # Tax Exclusion
+    effective_tax = active_tax
+    if mode == "Discount (%)":
+        discount = st.number_input("Discount %", min_value=0.0, max_value=100.0, value=10.0)
+        adjusted_rate = base_rate_special * (1 - (discount / 100))
+    else:
+        exclude = st.selectbox("Exclude Tax Type", ["State Tax", "City Tax", "Lodging Tax"])
+        adjusted_rate = base_rate_special
+        if exclude == "State Tax":
+            effective_tax -= STATE_TAX
+        elif exclude == "City Tax":
+            effective_tax -= CITY_TAX
+        else:
+            effective_tax -= LODGING_TAX
 
-        applied_tax = 0.0
-        if not exclude_state:
-            applied_tax += state_tax
-        if not exclude_city:
-            applied_tax += city_tax
-        if not exclude_lodging:
-            applied_tax += lodging_tax
+    total_cost = adjusted_rate * nights_special * (1 + (effective_tax / 100))
+    avg_rate = total_cost / nights_special
 
-        applied_multiplier = 1 + (applied_tax / 100)
-        total = effective_rate * applied_multiplier * nights
-        average_rate = total / nights
-
-        st.success(f"Total Charge: ${total:.2f}")
-        st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
+    if st.button("Calculate Special Rate"):
+        result = f"Total: ${total_cost:.2f} | Nightly: ${avg_rate:.2f} (Tax: {effective_tax:.2f}%)"
+        st.success(f"Total Cost: ${total_cost:.2f}")
+        st.info(f"Average Nightly Rate: ${avg_rate:.2f} (Effective Tax: {effective_tax:.2f}%)")
+        st.text_input("Copy result:", value=result, label_visibility="collapsed")
