@@ -14,9 +14,9 @@ with st.sidebar:
     show_advanced = st.checkbox("Manually Adjust Tax Components")
 
     if show_advanced:
-        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
+        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.1)
         city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=3.0, step=0.1)
-        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
+        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=2.7564, step=0.1)
     else:
         # Default values if advanced is off
         state_tax = 6.875
