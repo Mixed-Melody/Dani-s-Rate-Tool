@@ -92,4 +92,5 @@ with tab3:
 
     st.markdown("##### Copy Results:")
     st.code(f"{total_cost:.2f}", language="plaintext")
-    st.code(f"{average_rate:.2f}", language="plaintext")
+    if nights >1:
+        st.code(f"{average_rate:.2f}", language="plaintext")
