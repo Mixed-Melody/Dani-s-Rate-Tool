@@ -58,8 +58,8 @@ with tab1:
     nights    = Decimal(nights_i)
 
     # Compute base_rate in one go, then quantize for display
-    base_rate = total_amt / (nights * (Decimal(1) + active_tax / 100))
-     display_rate = (base_rate)
+    #base_rate = total_amt / (nights * (Decimal(1) + active_tax / 100))
+     #display_rate = (base_rate)
 
     col1, col2 = st.columns(2)
     with col1:
