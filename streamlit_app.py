@@ -93,5 +93,3 @@ with tab3:
     st.markdown("##### Copy Results:")
     st.code(f"Total Cost: ${total_cost:.2f}", language="plaintext")
     st.code(f"Average Rate: ${average_rate:.2f}", language="plaintext")
-✅ What
-Changed:
