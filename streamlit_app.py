@@ -24,7 +24,7 @@ with st.sidebar:
         lodging_tax = 4.8764
 
     active_tax = state_tax + city_tax + lodging_tax
-    st.caption(f"Current Tax Rate: **{active_tax:.6f}%**")
+    st.caption(f"Current Tax Rate: **{active_tax:.4f}%**")
 
 # --- Tabs ---
 tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total", "Special Rate"])
