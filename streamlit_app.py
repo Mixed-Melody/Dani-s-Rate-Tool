@@ -1,5 +1,5 @@
 import streamlit as st
-from decimal import Decimal, getcontext, ROUND_CEILING
+from decimal import Decimal, getcontext, ROUND_CEILING, ROUND_DOWN
 
 # ————— Decimal Setup —————
 getcontext().prec = 9
