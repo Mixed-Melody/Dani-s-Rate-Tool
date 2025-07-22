@@ -14,9 +14,9 @@ with st.sidebar:
     show_advanced = st.checkbox("Manually Adjust Tax Components")
 
     if show_advanced:
-        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.001, format="%.4f")
-        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=0.88, step=0.001, format="%.4f")
-        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.245, step=0.001, format="%.4f")
+        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.001, format="%.3f")
+        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=0.88, step=0.001, format="%.3f")
+        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.245, step=0.001, format="%.3f")
     else:
         # Default values if advanced is off
         state_tax = STATE_TAX
@@ -24,7 +24,7 @@ with st.sidebar:
         lodging_tax = LODGING_TAX
 
     active_tax = state_tax + city_tax + lodging_tax
-    st.caption(f"Current Tax Rate: **{active_tax:.4f}%**")
+    st.caption(f"Current Tax Rate: **{active_tax:.3f}%**")
 
 # --- Tabs ---
 tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total", "Special Rate"])
