@@ -93,5 +93,6 @@ with tab3:
         st.code(f"{average_rate:.2f}", language="plaintext")
     with col2:
         if nights >1:
-            st.info(f"Average Nightly Rate (without tax): ${average_rate:.2f}")
+
             st.code(f"{total_cost:.2f}", language="plaintext")
+            st.info(f"Average Nightly Rate (without tax): ${average_rate:.2f}")
