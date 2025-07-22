@@ -62,7 +62,7 @@ with tab2:
         "and number of nights. Simple and quick."
     )
     base_rate_fwd = st.number_input(
-        "Nightly Rate ($)", min_value=0.0, format="%.2f", key="fwd_rate"
+        "Nightly Rate ($)", min_value=0.0, value=100.0, format="%.2f", key="fwd_rate"
     )
     nights_fwd = st.number_input(
         "Number of Nights", min_value=1, value=1, key="fwd_nights2"
