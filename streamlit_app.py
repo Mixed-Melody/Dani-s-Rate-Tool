@@ -57,13 +57,21 @@ with tab2:
     st.subheader("Forward Calculator – Rate to Total")
     st.markdown(
         "**Basic nightly rate calculator.**\n\n"
-        "Use this if you just want to calculate the total amount from a rate and number of nights. Simple and quick."
+        "Use this if you just want to calculate the total amount from a rate "
+        "and number of nights. Simple and quick."
     )
-    base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, format="%.2f", key="fwd_rate")
-    nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights2")
+    base_rate_fwd = st.number_input(
+        "Nightly Rate ($)", min_value=0.0, format="%.2f", key="fwd_rate"
+    )
+    nights_fwd = st.number_input(
+        "Number of Nights", min_value=1, value=1, key="fwd_nights2"
+    )
 
-    # auto‑calculate
-    total = (base_rate_fwd * nights_fwd * (1 + active_tax/100)) if nights_fwd else 0
+    # calculate nightly cost with tax, rounded per night
+    nightly_with_tax = round(base_rate_fwd * (1 + active_tax / 100), 2)
+
+    # total is per-night rounded cost × nights
+    total = nightly_with_tax * nights_fwd
     display_total = f"{total:.2f}"
 
     col1, col2 = st.columns([1, 1])
@@ -71,7 +79,6 @@ with tab2:
         st.success(f"Total Cost:")
     with col2:
         st.code(display_total, language="plaintext")
-
 
 # --- Special Rate Calculator ---
 with tab3:
