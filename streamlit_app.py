@@ -19,11 +19,12 @@ with st.sidebar:
         lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=4.8764, step=0.0001, format="%.4f")
     else:
         # Default values if advanced is off
-        state_tax = 6.875
-        city_tax = 0.88
-        lodging_tax = 4.8764
+        else:
+        state_tax = STATE_TAX
+        city_tax = CITY_TAX
+        lodging_tax = LODGING_TAX
 
-    active_tax = state_tax + city_tax + lodging_tax
+active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.4f}%**")
 
 # --- Tabs ---
@@ -40,7 +41,7 @@ with tab1:
         base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
         result = f"{base_rate:.2f}"
         st.success(f"Base Nightly Rate: ${result}")
-        st.text_input("Copy result:", value=result, label_visibility="collapsed")
+        st.code(result, language="plaintext")
 
 # --- Forward Calculator ---
 with tab2:
@@ -57,7 +58,7 @@ with tab2:
 
 # --- Special Rate Calculator ---
 with tab3:
-    st.header("Special Rate Calculator")
+    st.subheader("Special Rate Calculator")
     st.markdown("**For handling special cases like VCCs with tax exemptions or discounts.**\n\nThis is especially useful for Expedia VCCs that are exempt from certain taxes like state tax. You can toggle exclusions and apply a discount if needed.")
     nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
     nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
