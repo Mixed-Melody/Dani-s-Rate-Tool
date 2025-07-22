@@ -84,7 +84,7 @@ with tab3:
     subtotal = discounted_rate * nights
     total_tax_amount = subtotal * (final_tax / 100)
     total_cost = subtotal + total_tax_amount
-    average_rate = total_cost / nights
+    average_rate = subtotal / nights
 
     # Show results with copy buttons
     st.success(f"Total Cost: ${total_cost:.2f}")
