@@ -2,34 +2,29 @@ import streamlit as st
 from decimal import Decimal, getcontext, ROUND_CEILING
 
 # ————— Decimal Setup —————
-getcontext().prec = 9  # enough precision for our sums
+getcontext().prec = 9
 
 def to_decimal(f):
-    # Convert a float/str to Decimal exactly
     return Decimal(str(f))
 
-def ceil2(value) -> Decimal:
-    d = Decimal(str(value))
-    return d.quantize(Decimal("0.01"), rounding=ROUND_CEILING)
+def ceil2(val: Decimal) -> Decimal:
+    return val.quantize(Decimal("0.01"), rounding=ROUND_CEILING)
 
-def solve_base_rate(total, nights, tax_pct) -> Decimal:
+def solve_base_rate(total: Decimal, nights: int, tax_pct: Decimal) -> Decimal:
     """
-    Binary‑search for the base rate such that:
-      ceil2(base_rate * (1 + tax_pct/100)) * nights == total
+    Find the pre‑tax nightly rate such that:
+      ceil2(rate * (1 + tax_pct/100)) * nights == total
     """
-    total_d  = Decimal(str(total))
-    nights_d = Decimal(str(nights))
-    tax_mult = Decimal(1) + (Decimal(str(tax_pct)) / 100)
-
-    low, high = Decimal("0"), total_d
-    for _ in range(25):  # 25 iterations for cent‑level precision
-        mid = (low + high) / 2
-        nightly = ceil2(mid * tax_mult)
-        summed  = nightly * nights_d
-
-        if summed == total_d:
+    low, high = Decimal("0"), total
+    tax_mult  = Decimal("1") + (tax_pct / Decimal("100"))
+    nights_d  = Decimal(nights)
+    for _ in range(25):
+        mid     = (low + high) / 2
+        night   = ceil2(mid * tax_mult)
+        summed  = night * nights_d
+        if summed == total:
             return mid
-        if summed > total_d:
+        if summed > total:
             high = mid
         else:
             low = mid
@@ -39,24 +34,24 @@ def solve_base_rate(total, nights, tax_pct) -> Decimal:
 st.set_page_config(page_title="Rate Calculator", layout="centered")
 st.title("Hotel Rate Calculator")
 
-# ————— Tax Rates (as Decimal) —————
+# ————— Tax Rates —————
 STATE_TAX   = to_decimal(6.875)
 CITY_TAX    = to_decimal(0.88)
 LODGING_TAX = to_decimal(5.245)
 
-# ————— Sidebar Tax Settings —————
+# ————— Sidebar —————
 with st.sidebar:
     st.markdown("### ⚙️ Advanced Tax Settings")
     adv = st.checkbox("Manually Adjust Tax Components")
     if adv:
-        state_tax   = to_decimal(st.number_input("State Tax (%)",   value=6.875, step=0.001, format="%.3f"))
-        city_tax    = to_decimal(st.number_input("City Tax (%)",    value=0.88,  step=0.001, format="%.3f"))
-        lodging_tax = to_decimal(st.number_input("Lodging Tax (%)", value=5.245, step=0.001, format="%.3f"))
+        state_tax   = to_decimal(st.number_input("State Tax (%)",   value=6.875, format="%.4f", step=0.0001))
+        city_tax    = to_decimal(st.number_input("City Tax (%)",    value=0.88,  format="%.4f", step=0.0001))
+        lodging_tax = to_decimal(st.number_input("Lodging Tax (%)", value=5.245, format="%.4f", step=0.0001))
     else:
         state_tax, city_tax, lodging_tax = STATE_TAX, CITY_TAX, LODGING_TAX
 
     active_tax = state_tax + city_tax + lodging_tax
-    st.caption(f"Current Tax Rate: **{active_tax:.3f}%**")
+    st.caption(f"Current Tax Rate: **{active_tax:.4f}%**")
 
 # ————— Tabs —————
 tab1, tab2, tab3 = st.tabs([
@@ -65,7 +60,7 @@ tab1, tab2, tab3 = st.tabs([
     "Special Rate"
 ])
 
-# ─── Tab 1: Reverse ───
+# ─── Tab1: Reverse ───
 with tab1:
     total_amt_f = st.number_input("Total Amount ($)", 100.00, format="%.2f", key="rev_total")
     nights_i    = st.number_input("Number of Nights", 1, format="%d", key="rev_nights")
