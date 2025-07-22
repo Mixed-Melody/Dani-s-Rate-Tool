@@ -65,104 +65,70 @@ tab1, tab2, tab3 = st.tabs([
     "Special Rate"
 ])
 
-# ————— Tab 1: Reverse —————
+# ─── Tab 1: Reverse ───
 with tab1:
-    st.subheader("Reverse Calculator – Total to Rate")
-    st.markdown(
-        "**Used when the total amount is slightly off...**\n\n"
-        "Reverse‑engineer the pre‑tax nightly rate so that, when taxed and rounded "
-        "per night, it sums exactly to your total."
-    )
-    total_amt_f = st.number_input("Total Amount ($)", value=100.00, format="%.2f", key="rev_total")
-    nights_i    = st.number_input("Number of Nights", value=1, format="%d", key="rev_nights")
+    total_amt_f = st.number_input("Total Amount ($)", 100.00, format="%.2f", key="rev_total")
+    nights_i    = st.number_input("Number of Nights", 1, format="%d", key="rev_nights")
 
-    # Convert inputs
     total_amt = to_decimal(total_amt_f)
-    nights    = Decimal(nights_i)
-
-    # Use solver instead of direct division
-    base_rate = solve_base_rate(
-        total=total_amount,
-        nights=nights,
-        tax_pct=active_tax
-    )
+    # solve for base_rate so per‑night ceiling matches total
+    base_rate = solve_base_rate(total=total_amt, nights=nights_i, tax_pct=active_tax)
     display_rate = f"{base_rate:.2f}"
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.success("Base Nightly Rate:")
-    with col2:
-        st.code(display_rate, language="plaintext")
+    col1, col2 = st.columns(2)
+    with col1: st.success("Base Nightly Rate:")
+    with col2: st.code(display_rate, language="plaintext")
 
-# ————— Tab 2: Forward —————
+
+# ─── Tab 2: Forward ───
 with tab2:
-    st.subheader("Forward Calculator – Rate to Total")
-    st.markdown(
-        "**Basic nightly rate calculator.**\n\n"
-        "Calculate the total by applying tax and rounding each night's charge."
-    )
-    rate_f = st.number_input("Nightly Rate ($)", value=100.00, format="%.2f", key="fwd_rate")
-    nights_i = st.number_input("Number of Nights", value=1, format="%d", key="fwd_nights2")
+    rate_f   = st.number_input("Nightly Rate ($)", 100.00, format="%.2f", key="fwd_rate")
+    nights_i = st.number_input("Number of Nights",   1,    format="%d", key="fwd_nights2")
 
-    rate = Decimal(str(base_rate_fwd))
-    nights = Decimal(nights_fwd)
+    rate   = to_decimal(rate_f)
+    nights = Decimal(str(nights_i))
 
-    # per‑night: tax then CEILING to next cent
-    nightly_with_tax = ceil2(rate * (Decimal(1) + Decimal(str(active_tax)) / 100))
-    total = nightly_with_tax * nights
-    display_total = f"{total:.2f}"
+    nightly_with_tax = ceil2(rate * (Decimal(1) + active_tax / 100))
+    total            = nightly_with_tax * nights
+    display_total    = f"{total:.2f}"
 
     col1, col2 = st.columns(2)
-    with col1:
-        st.success("Total Cost:")
-    with col2:
-        st.code(display_total, language="plaintext")
+    with col1: st.success("Total Cost:")
+    with col2: st.code(display_total, language="plaintext")
 
 
-# ————— Tab 3: Special Rate —————
+# ─── Tab 3: Special Rate ───
 with tab3:
-    st.subheader("Special Rate Calculator")
-    st.markdown(
-        "**Special cases: tax exemptions & discounts.**\n\n"
-        "Apply a promo discount and/or exclude selected tax components."
-    )
-
-    colA, colB = st.columns(2)
-    with colA:
-        rate_f = st.number_input("Nightly Rate ($)", value=100.00, format="%.2f", key="spec_rate")
-        discount_pct = st.slider("Discount (%)", 0, 100, 0)
-    with colB:
-        nights_i = st.number_input("Number of Nights", value=1, format="%d", key="spec_nights")
+    rate_f       = st.number_input("Nightly Rate ($)", 100.00, format="%.2f", key="spec_rate")
+    discount_pct = st.slider("Discount (%)", 0, 100, 0)
+    nights_i     = st.number_input("Number of Nights", 1, format="%d", key="spec_nights")
 
     exclude_state   = st.checkbox("Exclude State Tax")
     exclude_city    = st.checkbox("Exclude City Tax")
     exclude_lodging = st.checkbox("Exclude Lodging Tax")
 
-    # Convert and apply discount
-    rate = Decimal(str(nightly_rate))
-    nights = Decimal(nights)
-    discount = Decimal(discount_percent) / 100
+    rate      = to_decimal(rate_f)
+    nights    = Decimal(str(nights_i))
+    discount  = Decimal(str(discount_pct)) / Decimal(100)
     discounted = rate * (Decimal(1) - discount)
 
-    # sum only included taxes
     taxes = [
-        state_tax if not exclude_state else Decimal(0),
-        city_tax if not exclude_city else Decimal(0),
+        state_tax   if not exclude_state   else Decimal(0),
+        city_tax    if not exclude_city    else Decimal(0),
         lodging_tax if not exclude_lodging else Decimal(0),
     ]
     eff_tax = sum(taxes)
 
-    # per‑night taxed & CEILING
     nightly_with_tax = ceil2(discounted * (Decimal(1) + eff_tax / 100))
-    total_cost = nightly_with_tax * nights
-    avg_rate = nightly_with_tax
+    total_cost       = nightly_with_tax * nights
+    avg_rate         = nightly_with_tax
 
     col1, col2 = st.columns(2)
     with col1:
         st.success("Total Cost:")
-        if nights > 1:
+        if nights_i > 1:
             st.info(f"Average Nightly Rate: ${avg_rate:.2f}")
     with col2:
         st.code(f"{total_cost:.2f}", language="plaintext")
-        if nights > 1:
+        if nights_i > 1:
             st.code(f"{avg_rate:.2f}", language="plaintext")
