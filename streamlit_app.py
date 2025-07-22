@@ -87,8 +87,12 @@ with tab2:
 with tab3:
     st.subheader("Special Rate Calculator")
     st.markdown("**For handling special cases like VCCs with tax exemptions or discounts.**\n\nThis is especially useful for Expedia VCCs that are exempt from certain taxes like state tax. You can toggle exclusions and apply a discount if needed.")
-    nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
-    nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
+    with col2:
+        nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
 
     discount_percent = st.slider("Discount (%)", 0, 100, 0)
 
