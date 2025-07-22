@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(page_title="Rate Calculator", layout="centered")
-st.title("Hotel Rate Calculator")
+st.title("Dani's Rate Calculator")
 
 # --- Tax Rates ---
 STATE_TAX = 6.875
@@ -34,7 +34,7 @@ with tab1:
     st.subheader("Reverse Calculator – Total to Rate")
     st.markdown(
         "**Used when the total amount is slightly off from the sum of nightly rates.**\n\n"
-        "Sometimes platforms like Booking VCC are off by up to one dollar, even though the nightly rates "
+        "Sometimes thrid-parties like Booking VCC are off by up to one dollar, even though the nightly rates "
         "are correct. This tool helps you reverse-engineer and adjust the rate to match the given total."
     )
     total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f", key="rev_total")
