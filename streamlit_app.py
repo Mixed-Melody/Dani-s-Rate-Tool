@@ -53,7 +53,7 @@ with tab2:
         total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
         result = f"{total:.2f}"
         st.success(f"Total Cost with Tax: ${result}")
-        st.text_input("Copy result:", value=result, label_visibility="collapsed")
+        st.code(result, language="plaintext")
 
 # --- Special Rate Calculator ---
 with tab3:
@@ -86,5 +86,12 @@ with tab3:
     total_cost = subtotal + total_tax_amount
     average_rate = total_cost / nights
 
-    st.markdown(f"**Total Cost:** ${total_cost:.2f}")
-    st.markdown(f"**Average Rate (with tax):** ${average_rate:.2f}")
+    # Show results with copy buttons
+    st.success(f"Total Cost: ${total_cost:.2f}")
+    st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
+
+    st.markdown("##### Copy Results:")
+    st.code(f"Total Cost: ${total_cost:.2f}", language="plaintext")
+    st.code(f"Average Rate: ${average_rate:.2f}", language="plaintext")
+✅ What
+Changed:
