@@ -68,11 +68,16 @@ with tab1:
     total_amt = to_decimal(total_amt_f)
     # solve for base_rate so per‑night ceiling matches total
     base_rate = solve_base_rate(total=total_amt, nights=nights_i, tax_pct=active_tax)
-    display_rate = f"{base_rate:.2f}"
+
+    # Truncate (round down) to 2 decimals so we never go a penny too high
+    display_dec = base_rate.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+    display_rate = f"{display_dec:.2f}"
 
     col1, col2 = st.columns(2)
-    with col1: st.success("Base Nightly Rate:")
-    with col2: st.code(display_rate, language="plaintext")
+    with col1:
+        st.success("Base Nightly Rate:")
+    with col2:
+        st.code(display_rate, language="plaintext")
 
 
 # ─── Tab 2: Forward ───
