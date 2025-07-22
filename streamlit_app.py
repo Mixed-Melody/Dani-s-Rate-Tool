@@ -23,7 +23,7 @@ with st.sidebar:
         city_tax = CITY_TAX
         lodging_tax = LODGING_TAX
 
-active_tax = state_tax + city_tax + lodging_tax
+    active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.4f}%**")
 
 # --- Tabs ---
@@ -40,7 +40,7 @@ with tab1:
         base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
         result = f"{base_rate:.2f}"
         st.success(f"Base Nightly Rate: ${result}")
-        st.code(result, language="plaintext")
+        st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
 # --- Forward Calculator ---
 with tab2:
@@ -52,7 +52,7 @@ with tab2:
     if st.button("Calculate Total", key="forward"):
         total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
         result = f"{total:.2f}"
-        #st.success(f"Total Cost with Tax: ${result}")
+        st.success(f"Total Cost with Tax: ${result}")
         st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
 # --- Special Rate Calculator ---
@@ -88,4 +88,3 @@ with tab3:
 
     st.markdown(f"**Total Cost:** ${total_cost:.2f}")
     st.markdown(f"**Average Rate (with tax):** ${average_rate:.2f}")
-
