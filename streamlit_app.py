@@ -37,8 +37,11 @@ with tab1:
         "Sometimes thrid-parties like Booking VCC are off by up to one dollar, even though the nightly rates "
         "are correct. This tool helps you reverse-engineer and adjust the rate to match the given total."
     )
-    total_amount = st.number_input("Total Amount ($)", min_value=0.0,value=100.0, format="%.2f", key="rev_total")
-    nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        total_amount = st.number_input("Total Amount ($)", min_value=0.0,value=100.0, format="%.2f", key="rev_total")
+    with col2:
+        nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
 
     # auto‑calculate
     nightly_total = round(total_amount / nights, 2)
