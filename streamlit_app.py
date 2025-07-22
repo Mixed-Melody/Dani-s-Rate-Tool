@@ -19,7 +19,6 @@ with st.sidebar:
         lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=4.8764, step=0.0001, format="%.4f")
     else:
         # Default values if advanced is off
-        else:
         state_tax = STATE_TAX
         city_tax = CITY_TAX
         lodging_tax = LODGING_TAX
@@ -53,7 +52,7 @@ with tab2:
     if st.button("Calculate Total", key="forward"):
         total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
         result = f"{total:.2f}"
-        st.success(f"Total Cost with Tax: ${result}")
+        #st.success(f"Total Cost with Tax: ${result}")
         st.text_input("Copy result:", value=result, label_visibility="collapsed")
 
 # --- Special Rate Calculator ---
