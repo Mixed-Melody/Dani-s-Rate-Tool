@@ -91,5 +91,5 @@ with tab3:
     st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
 
     st.markdown("##### Copy Results:")
-    st.code(f"Total Cost: ${total_cost:.2f}", language="plaintext")
-    st.code(f"Average Rate: ${average_rate:.2f}", language="plaintext")
+    st.code(total_cost, language="plaintext")
+    st.code(average_rate, language="plaintext")
