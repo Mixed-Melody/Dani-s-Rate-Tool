@@ -1,5 +1,5 @@
 import streamlit as st
-from decimal import Decimal, getcontext, ROUND_HALF_UP
+from decimal import Decimal, getcontext, ROUND_CEILING
 
 # ————— Decimal Setup —————
 getcontext().prec = 9  # enough precision for our sums
@@ -8,9 +8,9 @@ def to_decimal(f):
     # Convert a float/str to Decimal exactly
     return Decimal(str(f))
 
-def quantize_2(d: Decimal) -> Decimal:
-    # Round to 2 dp, classic “half up”
-    return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+def ceil2(value) -> Decimal:
+    d = Decimal(str(value))
+    return d.quantize(Decimal("0.01"), rounding=ROUND_CEILING)
 
 # ————— App Config —————
 st.set_page_config(page_title="Rate Calculator", layout="centered")
@@ -78,20 +78,19 @@ with tab2:
     rate_f = st.number_input("Nightly Rate ($)", value=100.00, format="%.2f", key="fwd_rate")
     nights_i = st.number_input("Number of Nights", value=1, format="%d", key="fwd_nights2")
 
-    rate  = to_decimal(rate_f)
-    nights = Decimal(nights_i)
+    rate = Decimal(str(base_rate_fwd))
+    nights = Decimal(nights_fwd)
 
-    # 1) per-night taxed & rounded
-    nightly_with_tax = quantize_2(rate * (Decimal(1) + active_tax / 100))
-    # 2) multiply by nights
+    # per‑night: tax then CEILING to next cent
+    nightly_with_tax = ceil2(rate * (Decimal(1) + Decimal(str(active_tax)) / 100))
     total = nightly_with_tax * nights
-    display_total = quantize_2(total)
+    display_total = f"{total:.2f}"
 
     col1, col2 = st.columns(2)
     with col1:
         st.success("Total Cost:")
     with col2:
-        st.code(f"{display_total:.2f}", language="plaintext")
+        st.code(display_total, language="plaintext")
 
 
 # ————— Tab 3: Special Rate —————
@@ -114,31 +113,30 @@ with tab3:
     exclude_lodging = st.checkbox("Exclude Lodging Tax")
 
     # Convert and apply discount
-    rate      = to_decimal(rate_f)
-    discount = to_decimal(discount_pct) / Decimal(100)
-    discounted_rate = rate * (Decimal(1) - discount)
+    rate = Decimal(str(nightly_rate))
+    nights = Decimal(nights)
+    discount = Decimal(discount_percent) / 100
+    discounted = rate * (Decimal(1) - discount)
 
-    # Sum only included taxes
+    # sum only included taxes
     taxes = [
-        state_tax   if not exclude_state   else Decimal(0),
-        city_tax    if not exclude_city    else Decimal(0),
+        state_tax if not exclude_state else Decimal(0),
+        city_tax if not exclude_city else Decimal(0),
         lodging_tax if not exclude_lodging else Decimal(0),
     ]
     eff_tax = sum(taxes)
 
-    nights  = Decimal(nights_i)
-    # per-night taxed & rounded
-    nightly_with_tax = quantize_2(discounted_rate * (Decimal(1) + eff_tax / 100))
-    total_cost       = nightly_with_tax * nights
-    # average rate (with tax) is nightly_with_tax itself
-    avg_rate         = nightly_with_tax
+    # per‑night taxed & CEILING
+    nightly_with_tax = ceil2(discounted * (Decimal(1) + eff_tax / 100))
+    total_cost = nightly_with_tax * nights
+    avg_rate = nightly_with_tax
 
     col1, col2 = st.columns(2)
     with col1:
-        st.success(f"Total Cost:")
-        if nights_i > 1:
+        st.success("Total Cost:")
+        if nights > 1:
             st.info(f"Average Nightly Rate: ${avg_rate:.2f}")
     with col2:
         st.code(f"{total_cost:.2f}", language="plaintext")
-        if nights_i > 1:
+        if nights > 1:
             st.code(f"{avg_rate:.2f}", language="plaintext")
