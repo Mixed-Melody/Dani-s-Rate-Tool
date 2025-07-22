@@ -90,7 +90,7 @@ with tab3:
     col1, col2 = st.columns([1, 1])  # you can tweak ratios, e.g., [1, 2] for even tighter
     with col1:
         st.success(f"Total Cost:")
-         st.code(f"{average_rate:.2f}", language="plaintext")
+        st.code(f"{average_rate:.2f}", language="plaintext")
     with col2:
         if nights >1:
             st.info(f"Average Nightly Rate (without tax): ${average_rate:.2f}")
