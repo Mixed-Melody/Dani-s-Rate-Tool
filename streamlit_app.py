@@ -32,7 +32,7 @@ tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total"
 # --- Reverse Calculator ---
 with tab1:
     st.subheader("Reverse Calculator – Total to Rate")
-    st.markdown("**Used when the total amount is slightly off from the sum of nightly rates.**\n\nSometimes platforms like Booking VCC are off by $0.01 to $1, even though the nightly rates are correct. This tool helps you reverse-engineer and adjust the rate to match the given total.")
+    st.markdown("**Used when the total amount is slightly off from the sum of nightly rates.**\n\nSometimes platforms like Booking VCC are off by up to one dollar, even though the nightly rates are correct. This tool helps you reverse-engineer and adjust the rate to match the given total.")
     total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f")
     nights = st.number_input("Number of Nights", min_value=1, value=1)
 
@@ -45,6 +45,7 @@ with tab1:
 # --- Forward Calculator ---
 with tab2:
     st.subheader("Forward Calculator – Rate to Total")
+    st.markdown("**Basic nightly rate calculator.**\n\nUse this if you just want to calculate the total amount from a rate and number of nights. Simple and quick.")
     base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, format="%.2f")
     nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights")
 
@@ -57,7 +58,7 @@ with tab2:
 # --- Special Rate Calculator ---
 with tab3:
     st.header("Special Rate Calculator")
-
+    st.markdown("**For handling special cases like VCCs with tax exemptions or discounts.**\n\nThis is especially useful for Expedia VCCs that are exempt from certain taxes like state tax. You can toggle exclusions and apply a discount if needed.")
     nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
     nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
 
