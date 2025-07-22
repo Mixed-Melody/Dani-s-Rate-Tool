@@ -3,7 +3,7 @@ import streamlit as st
 def manual_round(value):
     rounded_value = round(value * 100) / 100  # Round to 2 decimals
     if value - rounded_value >= 0.004:
-        return rounded_value + 0.01  # Adjust by a penny if needed
+        return rounded_value - 0.02  # Adjust by a penny if needed
     return rounded_value
 
 st.set_page_config(page_title="Rate Calculator", layout="centered")
