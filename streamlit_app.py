@@ -12,6 +12,29 @@ def ceil2(value) -> Decimal:
     d = Decimal(str(value))
     return d.quantize(Decimal("0.01"), rounding=ROUND_CEILING)
 
+def solve_base_rate(total, nights, tax_pct) -> Decimal:
+    """
+    Binary‑search for the base rate such that:
+      ceil2(base_rate * (1 + tax_pct/100)) * nights == total
+    """
+    total_d  = Decimal(str(total))
+    nights_d = Decimal(str(nights))
+    tax_mult = Decimal(1) + (Decimal(str(tax_pct)) / 100)
+
+    low, high = Decimal("0"), total_d
+    for _ in range(25):  # 25 iterations for cent‑level precision
+        mid = (low + high) / 2
+        nightly = ceil2(mid * tax_mult)
+        summed  = nightly * nights_d
+
+        if summed == total_d:
+            return mid
+        if summed > total_d:
+            high = mid
+        else:
+            low = mid
+    return mid
+
 # ————— App Config —————
 st.set_page_config(page_title="Rate Calculator", layout="centered")
 st.title("Hotel Rate Calculator")
@@ -57,16 +80,19 @@ with tab1:
     total_amt = to_decimal(total_amt_f)
     nights    = Decimal(nights_i)
 
-    # Compute base_rate in one go, then quantize for display
-    #base_rate = total_amt / (nights * (Decimal(1) + active_tax / 100))
-     #display_rate = (base_rate)
+    # Use solver instead of direct division
+    base_rate = solve_base_rate(
+        total=total_amount,
+        nights=nights,
+        tax_pct=active_tax
+    )
+    display_rate = f"{base_rate:.2f}"
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
     with col1:
         st.success("Base Nightly Rate:")
     with col2:
-        st.code(f"{display_rate:.2f}", language="plaintext")
-
+        st.code(display_rate, language="plaintext")
 
 # ————— Tab 2: Forward —————
 with tab2:
