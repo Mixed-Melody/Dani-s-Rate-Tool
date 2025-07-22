@@ -1,131 +1,144 @@
 import streamlit as st
+from decimal import Decimal, getcontext, ROUND_HALF_UP
 
-def manual_round(value):
-    rounded_value = round(value * 100) / 100  # Round to 2 decimals
-    if value - rounded_value >= 0.004:
-        return rounded_value - 0.02  # Adjust by a penny if needed
-    return rounded_value
+# ————— Decimal Setup —————
+getcontext().prec = 9  # enough precision for our sums
 
+def to_decimal(f):
+    # Convert a float/str to Decimal exactly
+    return Decimal(str(f))
+
+def quantize_2(d: Decimal) -> Decimal:
+    # Round to 2 dp, classic “half up”
+    return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+# ————— App Config —————
 st.set_page_config(page_title="Rate Calculator", layout="centered")
-st.title("Dani's Rate Calculator")
+st.title("Hotel Rate Calculator")
 
-# --- Tax Rates ---
-STATE_TAX = 6.875
-CITY_TAX = 0.88
-LODGING_TAX = 5.245
+# ————— Tax Rates (as Decimal) —————
+STATE_TAX   = to_decimal(6.875)
+CITY_TAX    = to_decimal(0.88)
+LODGING_TAX = to_decimal(5.245)
 
-# --- Tax Component Toggle ---
+# ————— Sidebar Tax Settings —————
 with st.sidebar:
     st.markdown("### ⚙️ Advanced Tax Settings")
-    show_advanced = st.checkbox("Manually Adjust Tax Components")
-
-    if show_advanced:
-        state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.001, format="%.3f")
-        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=0.88, step=0.001, format="%.3f")
-        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.245, step=0.001, format="%.3f")
+    adv = st.checkbox("Manually Adjust Tax Components")
+    if adv:
+        state_tax   = to_decimal(st.number_input("State Tax (%)",   value=6.875, step=0.001, format="%.3f"))
+        city_tax    = to_decimal(st.number_input("City Tax (%)",    value=0.88,  step=0.001, format="%.3f"))
+        lodging_tax = to_decimal(st.number_input("Lodging Tax (%)", value=5.245, step=0.001, format="%.3f"))
     else:
-        # Default values if advanced is off
-        state_tax = STATE_TAX
-        city_tax = CITY_TAX
-        lodging_tax = LODGING_TAX
+        state_tax, city_tax, lodging_tax = STATE_TAX, CITY_TAX, LODGING_TAX
 
     active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.3f}%**")
 
-# --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total", "Special Rate"])
+# ————— Tabs —————
+tab1, tab2, tab3 = st.tabs([
+    "Reverse: Total → Rate",
+    "Forward: Rate → Total",
+    "Special Rate"
+])
 
-# --- Reverse Calculator ---
+# ————— Tab 1: Reverse —————
 with tab1:
     st.subheader("Reverse Calculator – Total to Rate")
     st.markdown(
-        "**Used when the total amount is slightly off from the sum of nightly rates.**\n\n"
-        "Sometimes thrid-parties like Booking VCC are off by up to one dollar, even though the nightly rates "
-        "are correct. This tool helps you reverse-engineer and adjust the rate to match the given total."
+        "**Used when the total amount is slightly off...**\n\n"
+        "Reverse‑engineer the pre‑tax nightly rate so that, when taxed and rounded "
+        "per night, it sums exactly to your total."
     )
-    col1, col2 = st.columns([1, 1])
+    total_amt_f = st.number_input("Total Amount ($)", value=100.00, format="%.2f", key="rev_total")
+    nights_i    = st.number_input("Number of Nights", value=1, format="%d", key="rev_nights")
+
+    # Convert inputs
+    total_amt = to_decimal(total_amt_f)
+    nights    = Decimal(nights_i)
+
+    # Compute base_rate in one go, then quantize for display
+    base_rate = total_amt / (nights * (Decimal(1) + active_tax / 100))
+    display_rate = quantize_2(base_rate)
+
+    col1, col2 = st.columns(2)
     with col1:
-        total_amount = st.number_input("Total Amount ($)", min_value=0.0, value=100.0, format="%.2f", key="rev_total")
+        st.success("Base Nightly Rate:")
     with col2:
-        nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
+        st.code(f"{display_rate:.2f}", language="plaintext")
 
-    # auto‑calculate
-    nightly_total = manual_round(total_amount / nights, 2)
-    base_rate = nightly_total / (1 + active_tax / 100)
-    display_rate = f"{base_rate:.2f}"
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.success(f"Base Nightly Rate:")
-    with col2:
-        st.code(display_rate, language="plaintext")
-
-# --- Forward Calculator ---
+# ————— Tab 2: Forward —————
 with tab2:
     st.subheader("Forward Calculator – Rate to Total")
     st.markdown(
         "**Basic nightly rate calculator.**\n\n"
-        "Use this if you just want to calculate the total amount from a rate "
-        "and number of nights. Simple and quick."
+        "Calculate the total by applying tax and rounding each night's charge."
     )
-    col1, col2 = st.columns([1, 1])
+    rate_f = st.number_input("Nightly Rate ($)", value=100.00, format="%.2f", key="fwd_rate")
+    nights_i = st.number_input("Number of Nights", value=1, format="%d", key="fwd_nights2")
+
+    rate  = to_decimal(rate_f)
+    nights = Decimal(nights_i)
+
+    # 1) per-night taxed & rounded
+    nightly_with_tax = quantize_2(rate * (Decimal(1) + active_tax / 100))
+    # 2) multiply by nights
+    total = nightly_with_tax * nights
+    display_total = quantize_2(total)
+
+    col1, col2 = st.columns(2)
     with col1:
-        base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, value=100.0, format="%.2f", key="fwd_rate")
+        st.success("Total Cost:")
     with col2:
-        nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights2")
+        st.code(f"{display_total:.2f}", language="plaintext")
 
-    # calculate nightly cost with tax, rounded per night
-    nightly_with_tax = manual_round(base_rate_fwd * (1 + active_tax / 100), 2)
 
-    # total is per-night rounded cost × nights
-    total = nightly_with_tax * nights_fwd
-    display_total = f"{total:.2f}"
-
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.success(f"Total Cost:")
-    with col2:
-        st.code(display_total, language="plaintext")
-
-# --- Special Rate Calculator ---
+# ————— Tab 3: Special Rate —————
 with tab3:
     st.subheader("Special Rate Calculator")
-    st.markdown("**For handling special cases like VCCs with tax exemptions or discounts.**\n\nThis is especially useful for Expedia VCCs that are exempt from certain taxes like state tax. You can toggle exclusions and apply a discount if needed.")
+    st.markdown(
+        "**Special cases: tax exemptions & discounts.**\n\n"
+        "Apply a promo discount and/or exclude selected tax components."
+    )
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
-        discount_percent = st.slider("Discount (%)", 0, 100, 0)
-    with col2:
-        nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
+    colA, colB = st.columns(2)
+    with colA:
+        rate_f = st.number_input("Nightly Rate ($)", value=100.00, format="%.2f", key="spec_rate")
+        discount_pct = st.slider("Discount (%)", 0, 100, 0)
+    with colB:
+        nights_i = st.number_input("Number of Nights", value=1, format="%d", key="spec_nights")
 
-    st.markdown("#### Tax Exemptions (optional)")
-    exclude_state = st.checkbox("Exclude State Tax")
-    exclude_city = st.checkbox("Exclude City Tax")
+    exclude_state   = st.checkbox("Exclude State Tax")
+    exclude_city    = st.checkbox("Exclude City Tax")
     exclude_lodging = st.checkbox("Exclude Lodging Tax")
 
-    # Apply discount
-    discounted_rate = nightly_rate * (1 - discount_percent / 100)
+    # Convert and apply discount
+    rate      = to_decimal(rate_f)
+    discount = to_decimal(discount_pct) / Decimal(100)
+    discounted_rate = rate * (Decimal(1) - discount)
 
-    # Build tax total based on what's *not* excluded
-    included = [
-        state_tax if not exclude_state else 0,
-        city_tax if not exclude_city else 0,
-        lodging_tax if not exclude_lodging else 0,
+    # Sum only included taxes
+    taxes = [
+        state_tax   if not exclude_state   else Decimal(0),
+        city_tax    if not exclude_city    else Decimal(0),
+        lodging_tax if not exclude_lodging else Decimal(0),
     ]
-    effective_tax = sum(included)
+    eff_tax = sum(taxes)
 
-    nightly_with_tax = manual_round(discounted_rate * (1 + effective_tax/100), 2)
+    nights  = Decimal(nights_i)
+    # per-night taxed & rounded
+    nightly_with_tax = quantize_2(discounted_rate * (Decimal(1) + eff_tax / 100))
     total_cost       = nightly_with_tax * nights
-    average_rate     = nightly_with_tax
+    # average rate (with tax) is nightly_with_tax itself
+    avg_rate         = nightly_with_tax
 
-    # Show results with copy buttons
-    col1, col2 = st.columns([1, 1])  # you can tweak ratios, e.g., [1, 2] for even tighter
+    col1, col2 = st.columns(2)
     with col1:
         st.success(f"Total Cost:")
-        if nights >1:
-            st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
+        if nights_i > 1:
+            st.info(f"Average Nightly Rate: ${avg_rate:.2f}")
     with col2:
         st.code(f"{total_cost:.2f}", language="plaintext")
-        if nights >1:
-            st.code(f"{average_rate:.2f}", language="plaintext")
+        if nights_i > 1:
+            st.code(f"{avg_rate:.2f}", language="plaintext")
