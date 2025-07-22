@@ -91,10 +91,9 @@ with tab3:
     col1, col2 = st.columns([1, 1])
     with col1:
         nightly_rate = st.number_input("Nightly Rate", min_value=0.0, value=100.0, key="special_nightly_rate")
+        discount_percent = st.slider("Discount (%)", 0, 100, 0)
     with col2:
         nights = st.number_input("Number of Nights", min_value=1, value=1, key="special_nights")
-
-    discount_percent = st.slider("Discount (%)", 0, 100, 0)
 
     st.markdown("#### Tax Exemptions (optional)")
     exclude_state = st.checkbox("Exclude State Tax")
