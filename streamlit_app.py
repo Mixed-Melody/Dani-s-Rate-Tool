@@ -12,7 +12,7 @@ def ceil2(val: Decimal) -> Decimal:
 
 def solve_base_rate(total: Decimal, nights: int, tax_pct: Decimal) -> Decimal:
     """
-    Find the pre‑tax nightly rate such that:
+    Find the pre‑tax nightly rate such that
       ceil2(rate * (1 + tax_pct/100)) * nights == total
     """
     low, high = Decimal("0"), total
