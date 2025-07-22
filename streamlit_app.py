@@ -41,7 +41,8 @@ with tab1:
     nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
 
     # auto‑calculate
-    base_rate = total_amount / ((1 + (active_tax / 100)) * nights) if nights else 0
+    nightly_total = round(total_amount / nights, 2)
+    base_rate = nightly_total / (1 + active_tax / 100)
     display_rate = f"{base_rate:.2f}"
 
     # two columns: label on left, copyable code on right
@@ -103,12 +104,11 @@ with tab3:
         city_tax if not exclude_city else 0,
         lodging_tax if not exclude_lodging else 0,
     ]
-    active_tax_tax = sum(included)
+    effective_tax = sum(included)
 
-    subtotal = discounted_rate * nights
-    total_tax_amount = subtotal * (active_tax / 100)
-    total_cost = subtotal + total_tax_amount
-    average_rate = total_cost / nights if nights else 0
+    nightly_with_tax = round(discounted_rate * (1 + effective_tax/100), 2)
+    total_cost       = nightly_with_tax * nights
+    average_rate     = nightly_with_tax
 
     # Show results with copy buttons
     col1, col2 = st.columns([1, 1])  # you can tweak ratios, e.g., [1, 2] for even tighter
