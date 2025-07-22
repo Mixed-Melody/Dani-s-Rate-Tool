@@ -40,7 +40,7 @@ with tab1:
         base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
         result = f"{base_rate:.2f}"
         st.success(f"Base Nightly Rate: ${result}")
-        st.text_input("Copy result:", value=result, label_visibility="collapsed")
+        st.code(result, language="plaintext")
 
 # --- Forward Calculator ---
 with tab2:
