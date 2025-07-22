@@ -1,22 +1,10 @@
 import streamlit as st
 
-def solve_base_rate(total, nights, tax):
-    # Handles edge cases
-    if nights == 0 or tax < 0:
-        return 0.0
-    # Binary search for penny-perfect solution
-    low, high = 0, total
-    for _ in range(20):  # 20 iterations is plenty for cents accuracy
-        mid = (low + high) / 2
-        nightly_with_tax = round(mid * (1 + tax / 100), 2)
-        calc_total = nightly_with_tax * nights
-        if abs(calc_total - total) < 0.005:  # Tolerance: half a cent
-            return mid
-        if calc_total > total:
-            high = mid
-        else:
-            low = mid
-    return mid  # Return the closest found
+def manual_round(value):
+    rounded_value = round(value * 100) / 100  # Round to 2 decimals
+    if value - rounded_value >= 0.005:
+        return rounded_value - 0.01  # Adjust by a penny if needed
+    return rounded_value
 
 st.set_page_config(page_title="Rate Calculator", layout="centered")
 st.title("Dani's Rate Calculator")
@@ -61,8 +49,9 @@ with tab1:
     with col2:
         nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
 
-    # NEW: use solver for penny-perfect reverse rate
-    base_rate = solve_base_rate(total_amount, nights, active_tax)
+    # auto‑calculate
+    nightly_total = manual_round(total_amount / nights, 2)
+    base_rate = nightly_total / (1 + active_tax / 100)
     display_rate = f"{base_rate:.2f}"
 
     col1, col2 = st.columns([1, 1])
@@ -86,7 +75,7 @@ with tab2:
         nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights2")
 
     # calculate nightly cost with tax, rounded per night
-    nightly_with_tax = round(base_rate_fwd * (1 + active_tax / 100), 2)
+    nightly_with_tax = manual_round(base_rate_fwd * (1 + active_tax / 100), 2)
 
     # total is per-night rounded cost × nights
     total = nightly_with_tax * nights_fwd
@@ -126,7 +115,7 @@ with tab3:
     ]
     effective_tax = sum(included)
 
-    nightly_with_tax = round(discounted_rate * (1 + effective_tax/100), 2)
+    nightly_with_tax = manual_round(discounted_rate * (1 + effective_tax/100), 2)
     total_cost       = nightly_with_tax * nights
     average_rate     = nightly_with_tax
 
