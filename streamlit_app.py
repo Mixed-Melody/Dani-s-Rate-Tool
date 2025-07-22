@@ -87,10 +87,8 @@ with tab3:
     average_rate = subtotal / nights
 
     # Show results with copy buttons
-    st.success(f"Total Cost: ${total_cost:.2f}")
-    st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
-
-    st.markdown("##### Copy Results:")
+    st.success(f"Total Cost:")
     st.code(f"{total_cost:.2f}", language="plaintext")
     if nights >1:
+        st.info(f"Average Nightly Rate (without tax): ${average_rate:.2f}"))
         st.code(f"{average_rate:.2f}", language="plaintext")
