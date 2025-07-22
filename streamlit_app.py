@@ -84,14 +84,14 @@ with tab3:
     subtotal = discounted_rate * nights
     total_tax_amount = subtotal * (final_tax / 100)
     total_cost = subtotal + total_tax_amount
-    average_rate = subtotal / nights
+    average_rate = total_cost / nights
 
     # Show results with copy buttons
     col1, col2 = st.columns([1, 1])  # you can tweak ratios, e.g., [1, 2] for even tighter
     with col1:
         st.success(f"Total Cost:")
         if nights >1:
-            st.info(f"Average Nightly Rate (without tax): ${average_rate:.2f}")
+            st.info(f"Average Nightly Rate (with tax): ${average_rate:.2f}")
     with col2:
         st.code(f"{total_cost:.2f}", language="plaintext")
         if nights >1:
