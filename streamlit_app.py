@@ -6,7 +6,7 @@ st.title("Hotel Rate Calculator")
 # --- Tax Rates ---
 STATE_TAX = 6.875
 CITY_TAX = 0.88
-LODGING_TAX = 4.8764
+LODGING_TAX = 5.245
 
 # --- Tax Component Toggle ---
 with st.sidebar:
@@ -16,7 +16,7 @@ with st.sidebar:
     if show_advanced:
         state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.0001, format="%.4f")
         city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=0.88, step=0.0001, format="%.4f")
-        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=4.8764, step=0.0001, format="%.4f")
+        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=5.245, step=0.0001, format="%.4f")
     else:
         # Default values if advanced is off
         state_tax = STATE_TAX
