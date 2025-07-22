@@ -32,6 +32,7 @@ tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total"
 # --- Reverse Calculator ---
 with tab1:
     st.subheader("Reverse Calculator – Total to Rate")
+    st.markdown("**Used when the total amount is slightly off from the sum of nightly rates.**\n\nSometimes platforms like Booking VCC are off by $0.01 to $1, even though the nightly rates are correct. This tool helps you reverse-engineer and adjust the rate to match the given total.")
     total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f")
     nights = st.number_input("Number of Nights", min_value=1, value=1)
 
