@@ -1,5 +1,23 @@
 import streamlit as st
 
+def solve_base_rate(total, nights, tax):
+    # Handles edge cases
+    if nights == 0 or tax < 0:
+        return 0.0
+    # Binary search for penny-perfect solution
+    low, high = 0, total
+    for _ in range(20):  # 20 iterations is plenty for cents accuracy
+        mid = (low + high) / 2
+        nightly_with_tax = round(mid * (1 + tax / 100), 2)
+        calc_total = nightly_with_tax * nights
+        if abs(calc_total - total) < 0.005:  # Tolerance: half a cent
+            return mid
+        if calc_total > total:
+            high = mid
+        else:
+            low = mid
+    return mid  # Return the closest found
+
 st.set_page_config(page_title="Rate Calculator", layout="centered")
 st.title("Dani's Rate Calculator")
 
@@ -39,22 +57,19 @@ with tab1:
     )
     col1, col2 = st.columns([1, 1])
     with col1:
-        total_amount = st.number_input("Total Amount ($)", min_value=0.0,value=100.0, format="%.2f", key="rev_total")
+        total_amount = st.number_input("Total Amount ($)", min_value=0.0, value=100.0, format="%.2f", key="rev_total")
     with col2:
         nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
 
-    # auto‑calculate
-    nightly_total = round(total_amount / nights, 2)
-    base_rate = nightly_total / (1 + active_tax / 100)
+    # NEW: use solver for penny-perfect reverse rate
+    base_rate = solve_base_rate(total_amount, nights, active_tax)
     display_rate = f"{base_rate:.2f}"
 
-    # two columns: label on left, copyable code on right
     col1, col2 = st.columns([1, 1])
     with col1:
         st.success(f"Base Nightly Rate:")
     with col2:
         st.code(display_rate, language="plaintext")
-
 
 # --- Forward Calculator ---
 with tab2:
