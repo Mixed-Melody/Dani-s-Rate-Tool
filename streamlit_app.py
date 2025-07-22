@@ -1,12 +1,12 @@
 import streamlit as st
 
 st.set_page_config(page_title="Rate Calculator", layout="centered")
-st.title("🏨 Hotel Rate Calculator")
+st.title("Hotel Rate Calculator")
 
 # --- Tax Rates ---
-STATE_TAX = 4.5
-CITY_TAX = 3.0
-LODGING_TAX = 5.0
+STATE_TAX = 6.875
+CITY_TAX = 0.88
+LODGING_TAX = 4.8764
 
 # --- Tax Component Toggle ---
 with st.sidebar:
@@ -15,13 +15,13 @@ with st.sidebar:
 
     if show_advanced:
         state_tax = st.number_input("State Tax (%)", min_value=0.0, max_value=100.0, value=6.875, step=0.1)
-        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=3.0, step=0.1)
-        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=2.7564, step=0.1)
+        city_tax = st.number_input("City Tax (%)", min_value=0.0, max_value=100.0, value=0.88, step=0.1)
+        lodging_tax = st.number_input("Lodging Tax (%)", min_value=0.0, max_value=100.0, value=4.8764, step=0.1)
     else:
         # Default values if advanced is off
         state_tax = 6.875
         city_tax = 3.0
-        lodging_tax = 2.7564
+        lodging_tax = 4.8764
 
     active_tax = state_tax + city_tax + lodging_tax
     st.caption(f"Current Tax Rate: **{active_tax:.2f}%**")
