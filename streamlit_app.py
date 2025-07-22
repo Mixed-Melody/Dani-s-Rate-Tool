@@ -32,28 +32,46 @@ tab1, tab2, tab3 = st.tabs(["Reverse: Total → Rate", "Forward: Rate → Total"
 # --- Reverse Calculator ---
 with tab1:
     st.subheader("Reverse Calculator – Total to Rate")
-    st.markdown("**Used when the total amount is slightly off from the sum of nightly rates.**\n\nSometimes platforms like Booking VCC are off by up to one dollar, even though the nightly rates are correct. This tool helps you reverse-engineer and adjust the rate to match the given total.")
-    total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f")
-    nights = st.number_input("Number of Nights", min_value=1, value=1)
+    st.markdown(
+        "**Used when the total amount is slightly off from the sum of nightly rates.**\n\n"
+        "Sometimes platforms like Booking VCC are off by up to one dollar, even though the nightly rates "
+        "are correct. This tool helps you reverse-engineer and adjust the rate to match the given total."
+    )
+    total_amount = st.number_input("Total Amount ($)", min_value=0.0, format="%.2f", key="rev_total")
+    nights = st.number_input("Number of Nights", min_value=1, value=1, key="rev_nights")
 
-    if st.button("Calculate Rate", key="reverse"):
-        base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
-        result = f"{base_rate:.2f}"
-        st.success(f"Base Nightly Rate: ${result}")
-        st.code(result, language="plaintext")
+    # auto‑calculate
+    base_rate = total_amount / ((1 + (active_tax / 100)) * nights) if nights else 0
+    display_rate = f"{base_rate:.2f}"
+
+    # two columns: label on left, copyable code on right
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.success(f"Base Nightly Rate:")
+    with col2:
+        st.code(display_rate, language="plaintext")
+
 
 # --- Forward Calculator ---
 with tab2:
     st.subheader("Forward Calculator – Rate to Total")
-    st.markdown("**Basic nightly rate calculator.**\n\nUse this if you just want to calculate the total amount from a rate and number of nights. Simple and quick.")
-    base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, format="%.2f")
-    nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights")
+    st.markdown(
+        "**Basic nightly rate calculator.**\n\n"
+        "Use this if you just want to calculate the total amount from a rate and number of nights. Simple and quick."
+    )
+    base_rate_fwd = st.number_input("Nightly Rate ($)", min_value=0.0, format="%.2f", key="fwd_rate")
+    nights_fwd = st.number_input("Number of Nights", min_value=1, value=1, key="fwd_nights2")
 
-    if st.button("Calculate Total", key="forward"):
-        total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
-        result = f"{total:.2f}"
-        st.success(f"Total Cost with Tax: ${result}")
-        st.code(result, language="plaintext")
+    # auto‑calculate
+    total = base_rate_fwd * nights_fwd * (1 + (active_tax / 100))
+    display_total = f"{total:.2f}"
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.success(f"Total Cost:")
+    with col2:
+        st.code(display_total, language="plaintext")
+
 
 # --- Special Rate Calculator ---
 with tab3:
