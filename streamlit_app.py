@@ -40,7 +40,7 @@ with tab1:
     if st.button("Calculate Rate", key="reverse"):
         base_rate = total_amount / ((1 + (active_tax / 100)) * nights)
         result = f"{base_rate:.2f}"
-        #st.success(f"Base Nightly Rate: ${result}")
+        st.success(f"Base Nightly Rate: ${result}")
         st.code(result, language="plaintext")
 
 # --- Forward Calculator ---
