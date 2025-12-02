@@ -63,10 +63,14 @@ def compute_breakdown(base: float) -> tuple[float, float, float, float, float]:
 def find_base_from_total(target_total: float) -> tuple[float, float, float, float, float] | None:
     """Solve for the base rate given a grand total using hotel rounding rules.
 
-    This function searches around an approximate base value to find a
-    candidate base rate (in cents) whose computed total exactly matches
-    the desired total when taxes are rounded according to the hotel
-    rules.
+    The hotel system sometimes allocates a penny difference between the
+    base rate and the state tax so that the grand total stays exact.
+    This implementation first estimates the base by dividing the total
+    by the combined rate (1 + state + city + lodging) and rounding to
+    two decimals.  It then walks downward in one‑cent increments to
+    find a candidate base that preserves the total but minimises the
+    base (and correspondingly increases the state tax) when a penny
+    discrepancy exists.
 
     Parameters
     ----------
@@ -79,21 +83,53 @@ def find_base_from_total(target_total: float) -> tuple[float, float, float, floa
         (base, state_tax, city_tax, lodging_tax, total) as floats if a
         solution is found; otherwise None.
     """
-    target_total_dec = Decimal(str(target_total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    # Rough starting point (ignores rounding effects)
-    approx_base = target_total_dec / (1 + STATE_TAX_RATE + CITY_TAX_RATE + LODGING_TAX_RATE)
-    # Search plus/minus $3.00 around the approximate base in 1‑cent increments
-    # to account for rounding differences.
-    for offset_cents in range(-300, 301):
-        candidate_base = (approx_base + Decimal(offset_cents) * Decimal("0.01")).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
+    total_dec = Decimal(str(target_total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # Compute the naive base by removing all tax rates
+    # This ignores rounding but serves as a starting point
+    naive_base = total_dec / (1 + STATE_TAX_RATE + CITY_TAX_RATE + LODGING_TAX_RATE)
+    naive_base = naive_base.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # We will search downward from the naive base for a better fit
+    candidates: list[tuple[Decimal, Decimal, Decimal, Decimal, Decimal, Decimal]] = []
+    for cents_offset in range(0, 21):  # search up to 20 cents below the naive base
+        candidate_base = naive_base - Decimal(cents_offset) * Decimal("0.01")
         if candidate_base <= 0:
             continue
-        # Compute the total for this candidate
-        base_f, st, ct, lt, total_f = compute_breakdown(float(candidate_base))
-        if abs(total_f - float(target_total_dec)) < 0.005:
-            return base_f, st, ct, lt, total_f
+        # Predicted city and lodging taxes using normal rounding
+        city_tax = (candidate_base * CITY_TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        lodging_tax = (candidate_base * LODGING_TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        # Predicted state tax using standard rounding up
+        predicted_state = (candidate_base * STATE_TAX_RATE * 100).to_integral_value(rounding=ROUND_UP) / Decimal("100")
+        # Compute the residual state tax needed to hit the total
+        residual_state = total_dec - candidate_base - city_tax - lodging_tax
+        residual_state = residual_state.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        # If the residual state is negative, break (base too high)
+        if residual_state < 0:
+            continue
+        # The difference between residual and predicted state indicates
+        # whether we have moved a penny from the base to the state.
+        diff = residual_state - predicted_state
+        # Accept the candidate if the residual state does not deviate by
+        # more than 1 cent from the predicted state tax.  Prefer
+        # candidates where diff >= 0 (state tax is equal or higher than
+        # predicted), which results in a slightly lower base.
+        if abs(diff) <= Decimal("0.01"):
+            candidates.append((candidate_base, residual_state, city_tax, lodging_tax, total_dec, diff))
+    # Select the best candidate according to diff and base
+    if candidates:
+        # Sort by diff descending (prefer positive diff), then by base ascending (prefer smaller base)
+        candidates.sort(key=lambda x: (-(x[5] > 0), x[0]))
+        chosen_base, state_tax, city_tax, lodging_tax, total_final, _ = candidates[0]
+        return float(chosen_base), float(state_tax), float(city_tax), float(lodging_tax), float(total_final)
+    # Fall back to the original exhaustive search if no candidate found
+    # Rough starting point ignoring rounding
+    approx_base = total_dec / (1 + STATE_TAX_RATE + CITY_TAX_RATE + LODGING_TAX_RATE)
+    for offset_cents in range(-300, 301):
+        candidate = (approx_base + Decimal(offset_cents) * Decimal("0.01")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if candidate <= 0:
+            continue
+        b, st, ct, lt, total_f = compute_breakdown(float(candidate))
+        if abs(total_f - float(total_dec)) < 0.005:
+            return b, st, ct, lt, total_f
     return None
 
 
