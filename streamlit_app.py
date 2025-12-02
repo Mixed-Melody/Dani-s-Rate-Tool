@@ -1,38 +1,44 @@
 import streamlit as st
 
-# --- Constants ---
-TAX_STATE = 0.06875
-TAX_CITY = 0.01125
-TAX_LODGING = 0.05
-TAX_TOTAL = TAX_STATE + TAX_CITY + TAX_LODGING
+from decimal import Decimal, getcontext, ROUND_HALF_UP, ROUND_UP
 
-# --- App Layout ---
-st.title("Rate Breakdown Tool")
-st.write("Use this tool to reverse-calculate hotel room rates or break down taxes.")
+# Set precision high enough for cents-level math
+getcontext().prec = 10
 
-method = st.radio("Calculation Method", ("Forward Calculate (Base to Total)", "Reverse Calculate (Total to Base)"))
+# Tax rates
+state_rate = Decimal('0.06875')
+city_rate = Decimal('0.01125')
+lodging_rate = Decimal('0.05')
 
-if method == "Reverse Calculate (Total to Base)":
-    total = st.number_input("Enter Grand Total ($)", min_value=0.00, step=0.01)
-else:
-    total = st.number_input("Enter Base Rate ($)", min_value=0.00, step=0.01)
+def compute_breakdown(base):
+    """Given a base rate, return (total, state_tax, city_tax, lodging_tax)."""
+    base_dec = Decimal(str(base)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    # State tax is always rounded *up* to the next cent
+    state_tax = (base_dec * state_rate * 100).to_integral_value(rounding=ROUND_UP) / Decimal('100')
+    # City and lodging taxes are rounded normally
+    city_tax = (base_dec * city_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    lodging_tax = (base_dec * lodging_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total = base_dec + state_tax + city_tax + lodging_tax
+    return float(total), float(state_tax), float(city_tax), float(lodging_tax)
 
-# --- Rate Calculation ---
-if method == "Reverse Calculate (Total to Base)":
-    base_rate = total / (1 + TAX_TOTAL)
-else:
-    base_rate = total
+def find_base_from_total(target_total):
+    """Find a base rate that exactly matches a given total with taxes."""
+    target_total_dec = Decimal(str(target_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    # Naïve starting point (ignores rounding)
+    approx_base = target_total_dec / (1 + state_rate + city_rate + lodging_rate)
+    # Search ±$3 around the naive estimate
+    for offset in range(-300, 301):
+        candidate = (approx_base + Decimal(offset) * Decimal('0.01')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if candidate <= 0:
+            continue
+        total, st, ct, lt = compute_breakdown(float(candidate))
+        # Match the total to within half a cent
+        if abs(total - float(target_total)) < 0.005:
+            return float(candidate), st, ct, lt
+    return None  # No match found
 
-state_tax = base_rate * TAX_STATE
-city_tax = base_rate * TAX_CITY
-lodging_tax = base_rate * TAX_LODGING
-grand_total = base_rate + state_tax + city_tax + lodging_tax
-
-# --- Display Results ---
-st.write("### Breakdown:")
-st.write(f"Base Rate: ${base_rate:.2f}")
-st.write(f"State Tax (6.875%): ${state_tax:.2f}")
-st.write(f"City Tax (1.125%): ${city_tax:.2f}")
-st.write(f"Lodging Tax (5.0%): ${lodging_tax:.2f}")
-st.markdown("---")
-st.write(f"**Grand Total: ${grand_total:.2f}**")
+# Example usage
+totals_to_try = [200.76, 143.52, 179.23, 90.78, 91.51, 186.33]
+for t in totals_to_try:
+    base, st, ct, lt = find_base_from_total(t)
+    print(f"Target total ${t}: base {base}, taxes: state {st}, city {ct}, lodging {lt}")
