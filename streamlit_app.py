@@ -1,27 +1,23 @@
 """Streamlit Hotel Rate Breakdown Calculator
 
-This Streamlit app helps you compute the tax breakdown for hotel room
-rates. It supports two modes:
+This Streamlit app computes the tax breakdown for hotel room rates
+using the same rounding logic applied by your hotel system.  You
+provide a **grand total** (the amount charged including taxes) and
+optionally specify the **number of nights**.  The calculator then
+estimates the base rate per night and the individual state, city and
+lodging taxes.  It also multiplies those per‑night values by the
+number of nights to show totals for the entire stay.
 
-1. Forward Calculation – where you enter a base rate (pre‑tax), and
-   the app computes the state, city and lodging taxes along with the
-   grand total.
-2. Reverse Calculation – where you enter a grand total (tax included)
-   and the app solves for the base rate that yields that total using
-   the same rounding logic applied by the hotel system. It then
-   displays the individual taxes and base rate.
-
-The state tax rate is 6.875 % and is always rounded **up** to the next
-cent. The city and lodging tax rates are 1.125 % and 5.0 % respectively
-and both use normal half‑up rounding to two decimals.
-
-The app also plots a simple bar chart to visualise the breakdown of
-base rate and taxes.
+Please note that the hotel system sometimes allocates a penny
+difference between the base rate and the taxes.  This calculator
+assumes the same rounding rules but may yield results that are up to
+one cent lower than what the system computes.  A penny short is
+always safer than a penny over when dealing with virtual credit
+cards.
 """
 
 import streamlit as st
 from decimal import Decimal, getcontext, ROUND_HALF_UP, ROUND_UP
-import matplotlib.pyplot as plt
 
 
 # Increase precision for Decimal computations
@@ -85,43 +81,35 @@ def find_base_from_total(target_total: float) -> tuple[float, float, float, floa
     """
     total_dec = Decimal(str(target_total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     # Compute the naive base by removing all tax rates
-    # This ignores rounding but serves as a starting point
     naive_base = total_dec / (1 + STATE_TAX_RATE + CITY_TAX_RATE + LODGING_TAX_RATE)
     naive_base = naive_base.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    # We will search downward from the naive base for a better fit
+    # Search downward from the naive base for a better fit
     candidates: list[tuple[Decimal, Decimal, Decimal, Decimal, Decimal, Decimal]] = []
     for cents_offset in range(0, 21):  # search up to 20 cents below the naive base
         candidate_base = naive_base - Decimal(cents_offset) * Decimal("0.01")
         if candidate_base <= 0:
             continue
-        # Predicted city and lodging taxes using normal rounding
+        # Predicted taxes using normal rounding
         city_tax = (candidate_base * CITY_TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         lodging_tax = (candidate_base * LODGING_TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        # Predicted state tax using standard rounding up
         predicted_state = (candidate_base * STATE_TAX_RATE * 100).to_integral_value(rounding=ROUND_UP) / Decimal("100")
         # Compute the residual state tax needed to hit the total
         residual_state = total_dec - candidate_base - city_tax - lodging_tax
         residual_state = residual_state.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        # If the residual state is negative, break (base too high)
+        # Skip negative residuals
         if residual_state < 0:
             continue
-        # The difference between residual and predicted state indicates
-        # whether we have moved a penny from the base to the state.
         diff = residual_state - predicted_state
-        # Accept the candidate if the residual state does not deviate by
-        # more than 1 cent from the predicted state tax.  Prefer
-        # candidates where diff >= 0 (state tax is equal or higher than
-        # predicted), which results in a slightly lower base.
+        # Accept if residual state is within a cent of predicted and prefer
+        # moving a penny from base to state (diff >= 0)
         if abs(diff) <= Decimal("0.01"):
             candidates.append((candidate_base, residual_state, city_tax, lodging_tax, total_dec, diff))
-    # Select the best candidate according to diff and base
     if candidates:
-        # Sort by diff descending (prefer positive diff), then by base ascending (prefer smaller base)
+        # Prefer positive diff (penny moved to state), else highest diff allowed
         candidates.sort(key=lambda x: (-(x[5] > 0), x[0]))
         chosen_base, state_tax, city_tax, lodging_tax, total_final, _ = candidates[0]
         return float(chosen_base), float(state_tax), float(city_tax), float(lodging_tax), float(total_final)
-    # Fall back to the original exhaustive search if no candidate found
-    # Rough starting point ignoring rounding
+    # Fallback exhaustive search
     approx_base = total_dec / (1 + STATE_TAX_RATE + CITY_TAX_RATE + LODGING_TAX_RATE)
     for offset_cents in range(-300, 301):
         candidate = (approx_base + Decimal(offset_cents) * Decimal("0.01")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -139,78 +127,68 @@ def main() -> None:
     st.title("Hotel Rate Breakdown Calculator")
     st.markdown(
         """
-        Enter either a **base rate** (pre‑tax) or a **grand total** (with
-        taxes) and this tool will compute the state, city and lodging
-        taxes for you. When given a grand total, the app searches for
-        the base rate that results in exactly that total using the same
-        rounding rules applied by your hotel system.
+        Provide the **grand total** for your stay (including taxes) and the
+        **number of nights**.  This calculator will estimate the base rate
+        per night and the corresponding state, city and lodging taxes
+        using the hotel's rounding rules.  The results may be up to
+        one penny short of the system's calculation due to rounding
+        differences.
         """
     )
 
-    # Select calculation method
-    method = st.radio(
-        "Calculation Method",
-        options=["Forward (Base → Total)", "Reverse (Total → Base)"],
-        help="Choose whether you want to start with a base rate or a grand total."
+    total_input = st.number_input(
+        "Enter Grand Total for Entire Stay ($)",
+        min_value=0.00,
+        step=0.01,
+        format="%.2f",
     )
-
-    # Take user input based on method
-    if method == "Forward (Base → Total)":
-        base_input = st.number_input(
-            "Enter Base Rate ($)",
-            min_value=0.00,
-            step=0.01,
-            format="%.2f"
-        )
-        if st.button("Compute Total"):
-            base, state_tax, city_tax, lodging_tax, total = compute_breakdown(base_input)
-            # Display results
-            st.subheader("Breakdown")
-            st.metric("Base Rate", f"$ {base:.2f}")
-            st.metric("State Tax (6.875% – rounded up)", f"$ {state_tax:.2f}")
-            st.metric("City Tax (1.125%)", f"$ {city_tax:.2f}")
-            st.metric("Lodging Tax (5.0%)", f"$ {lodging_tax:.2f}")
+    nights = st.number_input(
+        "Number of nights",
+        min_value=1,
+        value=1,
+        step=1,
+        format="%d",
+    )
+    if st.button("Compute Breakdown"):
+        if nights <= 0:
+            st.error("Number of nights must be at least 1.")
+            return
+        if total_input < 0:
+            st.error("Grand total must be non‑negative.")
+            return
+        # Compute per‑night total
+        per_night_total = total_input / nights
+        result = find_base_from_total(per_night_total)
+        if result is None:
+            st.error("No matching base rate found for the given total.")
+        else:
+            base_night, state_tax_night, city_tax_night, lodging_tax_night, total_night = result
+            # Multiply per‑night values by nights
+            base_total = base_night * nights
+            state_tax_total = state_tax_night * nights
+            city_tax_total = city_tax_night * nights
+            lodging_tax_total = lodging_tax_night * nights
+            grand_total = base_total + state_tax_total + city_tax_total + lodging_tax_total
+            # Display per‑night breakdown
+            st.subheader("Per‑Night Breakdown")
+            st.metric("Base Rate per Night", f"$ {base_night:.2f}")
+            st.metric("State Tax per Night (6.875% – rounded up)", f"$ {state_tax_night:.2f}")
+            st.metric("City Tax per Night (1.125%)", f"$ {city_tax_night:.2f}")
+            st.metric("Lodging Tax per Night (5.0%)", f"$ {lodging_tax_night:.2f}")
             st.markdown("---")
-            st.metric("Grand Total", f"$ {total:.2f}")
-
-            # Plot bar chart
-            components = ["Base", "State Tax", "City Tax", "Lodging Tax"]
-            values = [base, state_tax, city_tax, lodging_tax]
-            fig, ax = plt.subplots()
-            ax.bar(components, values)
-            ax.set_title("Rate Components")
-            ax.set_ylabel("Amount ($)")
-            st.pyplot(fig)
-    else:
-        total_input = st.number_input(
-            "Enter Grand Total ($)",
-            min_value=0.00,
-            step=0.01,
-            format="%.2f"
-        )
-        if st.button("Compute Base"):
-            result = find_base_from_total(total_input)
-            if result is None:
-                st.error("No matching base rate found for the given total.")
-            else:
-                base, state_tax, city_tax, lodging_tax, total = result
-                # Display results
-                st.subheader("Breakdown")
-                st.metric("Base Rate", f"$ {base:.2f}")
-                st.metric("State Tax (6.875% – rounded up)", f"$ {state_tax:.2f}")
-                st.metric("City Tax (1.125%)", f"$ {city_tax:.2f}")
-                st.metric("Lodging Tax (5.0%)", f"$ {lodging_tax:.2f}")
+            # Display totals for stay when nights > 1
+            if nights > 1:
+                st.subheader("Total for Stay")
+                st.metric("Base Total", f"$ {base_total:.2f}")
+                st.metric("State Tax Total", f"$ {state_tax_total:.2f}")
+                st.metric("City Tax Total", f"$ {city_tax_total:.2f}")
+                st.metric("Lodging Tax Total", f"$ {lodging_tax_total:.2f}")
                 st.markdown("---")
-                st.metric("Grand Total", f"$ {total:.2f}")
-
-                # Plot bar chart
-                components = ["Base", "State Tax", "City Tax", "Lodging Tax"]
-                values = [base, state_tax, city_tax, lodging_tax]
-                fig, ax = plt.subplots()
-                ax.bar(components, values)
-                ax.set_title("Rate Components")
-                ax.set_ylabel("Amount ($)")
-                st.pyplot(fig)
+                st.metric("Grand Total", f"$ {grand_total:.2f}")
+            else:
+                # For a single night, show the grand total at the end
+                st.markdown("---")
+                st.metric("Grand Total", f"$ {grand_total:.2f}")
 
 
 if __name__ == "__main__":
